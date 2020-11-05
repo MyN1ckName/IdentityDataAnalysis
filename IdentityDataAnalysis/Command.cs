@@ -25,19 +25,23 @@ namespace IdentityDataAnalysis
 		{
 			try
 			{
-				List<Element> modelElements = GetModelElementsByActiveView(commandData.Application.ActiveUIDocument);
-				//SelectElement(commandData.Application.ActiveUIDocument);
+				using (TransactionGroup tg = new TransactionGroup(commandData.Application.ActiveUIDocument.Document, "IdentityDataAnalysis"))
+				{
+					tg.Start();
 
-				//GetUniquTypeIds(modelElements);
+					CreateFilters(commandData.Application.ActiveUIDocument, BuiltInParameter.ALL_MODEL_MODEL);
+					SetViewStyle(commandData.Application.ActiveUIDocument.Document);					
+					SetAnVisibilityFilter(commandData.Application.ActiveUIDocument.Document);
+					SetVisibilityFilter(commandData.Application.ActiveUIDocument.Document);
 
-				//GetUniquCategorys(modelElements);
-				//TaskDialog.Show("pedik", GetUniquCategoryIds(modelElements).Count.ToString());
-
-				//TestCreateViewFilter(commandData.Application.ActiveUIDocument.Document, commandData.Application.ActiveUIDocument.Document.ActiveView);
-
-				CreateFilters(commandData.Application.ActiveUIDocument, BuiltInParameter.ALL_MODEL_MODEL);
+					//foreach(ElementId id in GetUniquCategoryIds(GetModelElementsByActiveView(commandData.Application.ActiveUIDocument)))
+					//{
+					//	TaskDialog.Show("pedik", id.ToString());
+					//}
 
 
+					tg.Assimilate();
+				}
 				return Result.Succeeded;
 			}
 
@@ -87,26 +91,10 @@ namespace IdentityDataAnalysis
 			else { throw new ArgumentException(); }
 		}
 
-		// TODO: test
-		private void TestCreateViewFilter(Document doc, View view)
-		{
-			List<ElementId> categories = new List<ElementId>();
-			categories.Add(new ElementId(BuiltInCategory.OST_Walls));
-
-			using (Transaction t = new Transaction(doc, "TestCreateViewFilter"))
-			{
-				t.Start();
-				ParameterFilterElement testFilter = ParameterFilterElement.Create(doc, "TestFilter", categories);
-				view.AddFilter(testFilter.Id);
-				t.Commit();
-			}
-		}
-
 		private void CreateFilters(UIDocument uiDoc, BuiltInParameter parameter)
 		{
 			//TODO: Значение параметра не обязательно string!!!
 			//StorageType p = uiDoc.Document.get_TypeOfStorage(parameter);
-
 
 			IList<FilterRule> visibilityFilterRules = new List<FilterRule>();
 			visibilityFilterRules.Add(ParameterFilterRuleFactory.CreateEqualsRule(new ElementId(parameter), "", true));
@@ -118,11 +106,11 @@ namespace IdentityDataAnalysis
 
 			List<ElementId> categorysIds = GetUniquCategoryIds(GetModelElementsByActiveView(uiDoc));
 
-			CreateFilterElement(uiDoc.Document, "IdentityDataAnalysis_Visibility", categorysIds, visibilityFilter);
-			CreateFilterElement(uiDoc.Document, "IdentityDataAnalysis_AnVisibility", categorysIds, anVisibilityFilter);
+			ParameterFilterElement filterForVisibility = CreateFilterElement(uiDoc.Document, "IdentityDataAnalysis_Visibility", categorysIds, visibilityFilter);
+			ParameterFilterElement filterForAnVisibility = CreateFilterElement(uiDoc.Document, "IdentityDataAnalysis_AnVisibility", categorysIds, anVisibilityFilter);
 		}
 
-		private void CreateFilterElement(Document doc, string name, List<ElementId> categoriesIds, ElementFilter elementFilter)
+		private ParameterFilterElement CreateFilterElement(Document doc, string name, List<ElementId> categoriesIds, ElementFilter elementFilter)
 		{
 			ElementClassFilter filter = new ElementClassFilter(typeof(ParameterFilterElement));
 			FilteredElementCollector collector = new FilteredElementCollector(doc);
@@ -141,7 +129,6 @@ namespace IdentityDataAnalysis
 				{
 					t.Start();
 					filterElement = ParameterFilterElement.Create(doc, name, categoriesIds, elementFilter);
-
 					t.Commit();
 				}
 			}
@@ -157,83 +144,124 @@ namespace IdentityDataAnalysis
 					t.Commit();
 				}
 			}
+
+			if (filterElement != null)
+			{
+				return filterElement;
+			}
+			else { throw new Exception(); }
 		}
 
-		//public static void CreateViewFilter(Document doc, View view)
-		//{
-		//	List<ElementId> categories = new List<ElementId>();
-		//	categories.Add(new ElementId(BuiltInCategory.OST_Walls));
-		//	List<FilterRule> filterRules = new List<FilterRule>();
-		//
-		//	using (Transaction t = new Transaction(doc, "Add view filter"))
-		//	{
-		//		t.Start();
-		//
-		//		// Create filter element assocated to the input categories
-		//		ParameterFilterElement parameterFilterElement = ParameterFilterElement.Create(doc, "Example view filter", categories);
-		//
-		//		// Criterion 1 - wall type Function is "Exterior"
-		//		ElementId exteriorParamId = new ElementId(BuiltInParameter.FUNCTION_PARAM);
-		//		filterRules.Add(ParameterFilterRuleFactory.CreateEqualsRule(exteriorParamId, (int)WallFunction.Exterior));
-		//
-		//		// Criterion 2 - wall height > some number
-		//		ElementId lengthId = new ElementId(BuiltInParameter.CURVE_ELEM_LENGTH);
-		//		filterRules.Add(ParameterFilterRuleFactory.CreateGreaterOrEqualRule(lengthId, 28.0, 0.0001));
-		//
-		//		// Criterion 3 - custom shared parameter value matches string pattern
-		//		// Get the id for the shared parameter - the ElementId is not hardcoded, so we need to get an instance of this type to find it
-		//		Guid spGuid = new Guid("96b00b61-7f5a-4f36-a828-5cd07890a02a");
-		//		FilteredElementCollector collector = new FilteredElementCollector(doc);
-		//		collector.OfClass(typeof(Wall));
-		//		Wall wall = collector.FirstElement() as Wall;
-		//
-		//		if (wall != null)
-		//		{
-		//			Parameter sharedParam = wall.get_Parameter(spGuid);
-		//			ElementId sharedParamId = sharedParam.Id;
-		//
-		//			filterRules.Add(ParameterFilterRuleFactory.CreateBeginsWithRule(sharedParamId, "15.", true));
-		//		}
-		//
-		//		ElementFilter elemFilter = CreateElementFilterFromFilterRules(filterRules);
-		//		parameterFilterElement.SetElementFilter(elemFilter);
-		//
-		//		// Apply filter to view
-		//		view.AddFilter(parameterFilterElement.Id);
-		//		view.SetFilterVisibility(parameterFilterElement.Id, false);
-		//		t.Commit();
-		//	}
-		//}
-
-		//private List<ElementId> GetUniquTypeIds(List<Element> elements)
-		//{
-		//	if (elements.Count > 0)
-		//	{
-		//		List<ElementId> elementTypeIds = new List<ElementId>();
-		//		foreach (Element element in elements)
-		//		{
-		//			elementTypeIds.Add(element.GetTypeId());
-		//		}
-		//		return elementTypeIds.Distinct().ToList<ElementId>();
-		//	}
-		//	else { throw new ArgumentException(); }
-		//}
-
-		// TODO: test
-		private void SelectElement(UIDocument uiDoc)
+		private void SetViewStyle(Document doc)
 		{
-			// See Model Elements
-			// https://help.autodesk.com/view/RVT/2020/ENU/?guid=Revit_API_Revit_API_Developers_Guide_Introduction_Elements_Essentials_Element_Classification_html
+			View view = doc.ActiveView;
 
-			FilteredElementCollector familyInstanceCollector = new FilteredElementCollector(uiDoc.Document, uiDoc.Document.ActiveView.Id);
-			familyInstanceCollector.OfClass(typeof(FamilyInstance));
+			using (Transaction t = new Transaction(doc, "SetViewStyle"))
+			{
+				t.Start();
+				view.EnableTemporaryViewPropertiesMode(view.Id);
+				view.DetailLevel = ViewDetailLevel.Fine;
+				view.get_Parameter(BuiltInParameter.MODEL_GRAPHICS_STYLE).Set(3);
+				view.AreAnalyticalModelCategoriesHidden = true;
+				t.Commit();
+			}
+		}
 
-			FilteredElementCollector hostObjectCollector = new FilteredElementCollector(uiDoc.Document, uiDoc.Document.ActiveView.Id);
-			hostObjectCollector.OfClass(typeof(HostObject));
+		private void SetAnVisibilityFilter(Document doc)
+		{
+			ElementClassFilter filter = new ElementClassFilter(typeof(ParameterFilterElement));
+			FilteredElementCollector collector = new FilteredElementCollector(doc);
+			collector.WherePasses(filter).ToElements()
+				.Cast<ParameterFilterElement>().ToList<ParameterFilterElement>();
 
-			IEnumerable<ElementId> modelElements = familyInstanceCollector.ToElementIds().Union(hostObjectCollector.ToElementIds());
+			var result =
+				from item in collector
+				where item.Name.Equals("IdentityDataAnalysis_AnVisibility")
+				select item;
 
-			uiDoc.Selection.SetElementIds(modelElements.ToList<ElementId>());
+			if (result.Count() > 0)
+			{
+				ParameterFilterElement filterForAnVisibility = result.First() as ParameterFilterElement;
+				View view = doc.ActiveView;
+
+				using (Transaction t = new Transaction(doc, "SetAnVisibilityFilter"))
+				{
+					t.Start();
+					view.AddFilter(filterForAnVisibility.Id);
+					view.SetFilterVisibility(filterForAnVisibility.Id, false);
+					t.Commit();
+				}
+			}
+			else { throw new NullReferenceException(); }
+		}
+
+		private void SetVisibilityFilter(Document doc)
+		{
+			ElementClassFilter filter = new ElementClassFilter(typeof(ParameterFilterElement));
+			FilteredElementCollector collector = new FilteredElementCollector(doc);
+			collector.WherePasses(filter).ToElements()
+				.Cast<ParameterFilterElement>().ToList<ParameterFilterElement>();
+
+			var result =
+				from item in collector
+				where item.Name.Equals("IdentityDataAnalysis_Visibility")
+				select item;
+
+			if (result.Count() > 0)
+			{
+				ParameterFilterElement filterForAnVisibility = result.First() as ParameterFilterElement;
+				View view = doc.ActiveView;
+
+				using (Transaction t = new Transaction(doc, "SetVisibilityFilter"))
+				{
+					t.Start();
+					view.AddFilter(filterForAnVisibility.Id);
+
+					OverrideGraphicSettings settings = new OverrideGraphicSettings();
+
+					FillPatternElement fillPatternElement = GetSolidFillPaeern(doc);
+					settings.SetSurfaceForegroundPatternId(fillPatternElement.Id);
+					settings.SetSurfaceBackgroundPatternId(fillPatternElement.Id);
+					settings.SetCutForegroundPatternId(fillPatternElement.Id);
+					settings.SetCutBackgroundPatternId(fillPatternElement.Id);
+
+					Color redColor = new Color(255, 0, 0);
+					settings.SetSurfaceForegroundPatternColor(redColor);
+					settings.SetSurfaceBackgroundPatternColor(redColor);
+					settings.SetCutForegroundPatternColor(redColor);
+					settings.SetCutBackgroundPatternColor(redColor);
+
+					settings.SetSurfaceTransparency(20);
+
+					view.SetFilterOverrides(filterForAnVisibility.Id, settings);
+					t.Commit();
+				}
+			}
+			else { throw new NullReferenceException(); }
+
+		}
+
+		private FillPatternElement GetSolidFillPaeern(Document doc)
+		{
+			ElementClassFilter filter = new ElementClassFilter(typeof(FillPatternElement));
+			FilteredElementCollector collector = new FilteredElementCollector(doc);
+			collector.WherePasses(filter).ToElements()
+				.Cast<FillPatternElement>().ToList<FillPatternElement>();
+
+			FillPatternElement fillPatternElement = null;
+			foreach (FillPatternElement fpe in collector)
+			{
+				if (fpe.GetFillPattern().IsSolidFill)
+				{
+					fillPatternElement = fpe;
+				}
+			}
+
+			if (fillPatternElement != null)
+			{
+				return fillPatternElement;
+			}
+			else { throw new Exception(); }
 		}
 	}
 }
