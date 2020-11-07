@@ -1,32 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Collections.ObjectModel;
 using System.Windows;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Diagnostics;
-
-using System.Threading;
-
 using Autodesk.Revit.DB;
-using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.UI;
-using Autodesk.Revit.UI.Selection;
-using Autodesk.Revit.ApplicationServices;
-using Autodesk.Revit.Attributes;
-using Autodesk.Revit.DB.Structure;
+
+using System.Diagnostics;
 
 namespace IdentityDataAnalysis.Windows.MainWindow
 {
 	class ViewModel : INotifyPropertyChanged
 	{
 		readonly UIDocument uiDoc;
+		List<Parameter> parameters;
 		public ViewModel(UIDocument uiDoc)
 		{
 			this.uiDoc = uiDoc;
+			parameters = GetParametersByBuiltInParameters(uiDoc, builtInParameters);
 		}
 
 		public string Title
@@ -42,9 +34,10 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 			BuiltInParameter.ALL_MODEL_TYPE_COMMENTS,
 			BuiltInParameter.ALL_MODEL_URL,
 		};
+
 		public List<Parameter> Parameters
 		{
-			get {return GetParametersByBuiltInParameters(uiDoc, builtInParameters);}
+			get { return parameters; }
 		}
 
 		Parameter selected;
@@ -67,7 +60,6 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 				{
 					Window window = obj as Window;
 					window.Close();
-
 					using (TransactionGroup tg = new TransactionGroup(uiDoc.Document, "IdentityDataAnalysis"))
 					{
 						tg.Start();
@@ -107,10 +99,10 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 				PropertyChanged(this, new PropertyChangedEventArgs(prop));
 		}
 
+		// Создание фильтров IdentityDataAnalysis_Visibility и IdentityDataAnalysis_AnVisibility,
+		// назначение им правил
 		private void CreateFilters(UIDocument uiDoc, Parameter parameter)
 		{
-			//TODO: Значение параметра не обязательно string!!!
-			//StorageType p = uiDoc.Document.get_TypeOfStorage(parameter);
 			IList<FilterRule> visibilityFilterRules = new List<FilterRule>();
 			visibilityFilterRules.Add(ParameterFilterRuleFactory.CreateEqualsRule(parameter.Id, "", true));
 			ElementParameterFilter visibilityFilter = new ElementParameterFilter(visibilityFilterRules);
@@ -124,6 +116,7 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 			ParameterFilterElement filterForAnVisibility = CreateFilterElement(uiDoc.Document, "IdentityDataAnalysis_AnVisibility", categorysIds, anVisibilityFilter);
 		}
 
+		// Получение уникальных объектов в коллекции
 		private List<ElementId> GetUniquCategorysIds(List<Element> elements)
 		{
 			if (elements.Count > 0)
@@ -133,12 +126,12 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 				{
 					elementCategory.Add(element.Category.Id);
 				}
-
 				return elementCategory.Distinct().ToList<ElementId>();
 			}
 			else { throw new ArgumentException(); }
 		}
 
+		// Элементы имеющие геометрию на активном виде
 		private List<Element> GetModelElementsByActiveView(UIDocument uiDoc)
 		{
 			// See Model Elements
@@ -156,9 +149,10 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 			{
 				return modelElements.ToList<Element>();
 			}
-			else { throw new NullReferenceException("The View does not contains Model Elements"); }
+			else { throw new NullReferenceException("Вид не содержит елементов с параметрами IdentityData"); }
 		}
 
+		// Создание или переопределение фильтра
 		private ParameterFilterElement CreateFilterElement(Document doc, string name, List<ElementId> categoriesIds, ElementFilter elementFilter)
 		{
 			ElementClassFilter filter = new ElementClassFilter(typeof(ParameterFilterElement));
@@ -199,6 +193,7 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 			else { throw new Exception(); }
 		}
 
+		// Назначение виду стиля отображения элементов
 		private void SetViewStyle(Document doc)
 		{
 			View view = doc.ActiveView;
@@ -213,6 +208,7 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 			}
 		}
 
+		// Переопределение графики для фильра IdentityDataAnalysis_AnVisibility
 		private void SetAnVisibilityFilter(Document doc)
 		{
 			ElementClassFilter filter = new ElementClassFilter(typeof(ParameterFilterElement));
@@ -244,6 +240,7 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 			else { throw new NullReferenceException(); }
 		}
 
+		// Переопределение графики для фильра IdentityDataAnalysis_Visibility
 		private void SetVisibilityFilter(Document doc)
 		{
 			ElementClassFilter filter = new ElementClassFilter(typeof(ParameterFilterElement));
@@ -296,6 +293,7 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 			}
 		}
 
+		// Получение сплошной штриховки
 		private FillPatternElement GetSolidFillPaeern(Document doc)
 		{
 			ElementClassFilter filter = new ElementClassFilter(typeof(FillPatternElement));
@@ -320,6 +318,7 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 			else { throw new Exception(); }
 		}
 
+		// Отображение результата
 		private void MessageShow(UIDocument uiDoc)
 		{
 			string message = null;
@@ -333,9 +332,10 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 					message = String.Concat(message, " -" + elementType.Name + Environment.NewLine);
 				}
 			}
-			TaskDialog.Show("IdentityDataAnalysis", message);
+			TaskDialog.Show("Отчет", message);
 		}
 
+		// Получение уникальных типоразмеров елементов по заданной категории на активном виде
 		private List<ElementType> GetUniquElementTypeByCategory(Document doc, Category category)
 		{
 			FilteredElementCollector collector = new FilteredElementCollector(doc, doc.ActiveView.Id);
@@ -359,6 +359,7 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 			else { throw new ArgumentException(); }
 		}
 
+		// Получение обькта Parameter по BuiltInParameter
 		private List<Parameter> GetParametersByBuiltInParameters(UIDocument uiDoc, List<BuiltInParameter> builtInParameters)
 		{
 			List<Element> elements = GetModelElementsByActiveView(uiDoc);

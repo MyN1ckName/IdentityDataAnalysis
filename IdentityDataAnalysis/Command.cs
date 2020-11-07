@@ -1,17 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Diagnostics;
-
 using Autodesk.Revit.DB;
-using Autodesk.Revit.DB.Architecture;
-using Autodesk.Revit.DB.Structure;
-using Autodesk.Revit.DB.Mechanical;
-using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.UI;
-using Autodesk.Revit.UI.Selection;
 using Autodesk.Revit.Attributes;
 
 namespace IdentityDataAnalysis
@@ -37,14 +26,13 @@ namespace IdentityDataAnalysis
 				window.ShowDialog();
 				return Result.Succeeded;
 			}
-
 			catch (Autodesk.Revit.Exceptions.OperationCanceledException)
 			{
 				return Result.Cancelled;
 			}
 			catch (Exception ex)
 			{
-				messege = ex.Message;
+				TaskDialog.Show("Ошибка", ex.Message);
 				return Result.Failed;
 			}
 		}		

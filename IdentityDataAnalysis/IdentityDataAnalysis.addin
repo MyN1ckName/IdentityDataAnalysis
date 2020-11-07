@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Assembly>IdentityDataAnalysis.dll</Assembly>
+    <ClientId>8A258FD5-68CC-47B9-B919-ED5C18300F7D</ClientId>
+    <FullClassName>IdentityDataAnalysis.App</FullClassName>
+    <Name>IdentityDataAnalysis</Name>
+    <VendorId>Egorov.A</VendorId>
+    <VendorDescription>https://github.com/MyN1ckName/IdentityDataAnalysis</VendorDescription>
+  </AddIn>
+</RevitAddIns>
