@@ -14,11 +14,13 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 	class ViewModel : INotifyPropertyChanged
 	{
 		readonly UIDocument uiDoc;
-		List<Parameter> parameters;
+		List<Element> elementsOnView;
+		List<Parameter> parameters;		
 		public ViewModel(UIDocument uiDoc)
 		{
 			this.uiDoc = uiDoc;
-			parameters = GetParametersByBuiltInParameters(uiDoc, builtInParameters);
+			elementsOnView = GetModelElementsByActiveView(uiDoc);
+			parameters = GetParametersByBuiltInParameters(uiDoc, builtInParameters, elementsOnView);			
 		}
 
 		public string Title
@@ -63,7 +65,7 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 					using (TransactionGroup tg = new TransactionGroup(uiDoc.Document, "IdentityDataAnalysis"))
 					{
 						tg.Start();
-						CreateFilters(uiDoc, selected);
+						CreateFilters(uiDoc, selected, elementsOnView);
 						SetViewStyle(uiDoc.Document);
 						SetAnVisibilityFilter(uiDoc.Document);
 						SetVisibilityFilter(uiDoc.Document);
@@ -101,7 +103,7 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 
 		// Создание фильтров IdentityDataAnalysis_Visibility и IdentityDataAnalysis_AnVisibility,
 		// назначение им правил
-		private void CreateFilters(UIDocument uiDoc, Parameter parameter)
+		private void CreateFilters(UIDocument uiDoc, Parameter parameter, List<Element> elements)
 		{
 			IList<FilterRule> visibilityFilterRules = new List<FilterRule>();
 			visibilityFilterRules.Add(ParameterFilterRuleFactory.CreateEqualsRule(parameter.Id, "", true));
@@ -111,7 +113,7 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 			anVisibilityFilterRules.Add(ParameterFilterRuleFactory.CreateNotEqualsRule(parameter.Id, "", true));
 			ElementParameterFilter anVisibilityFilter = new ElementParameterFilter(anVisibilityFilterRules);
 
-			List<ElementId> categorysIds = GetUniquCategorysIds(GetModelElementsByActiveView(uiDoc));
+			List<ElementId> categorysIds = GetUniquCategorysIds(elements);
 			ParameterFilterElement filterForVisibility = CreateFilterElement(uiDoc.Document, "IdentityDataAnalysis_Visibility", categorysIds, visibilityFilter);
 			ParameterFilterElement filterForAnVisibility = CreateFilterElement(uiDoc.Document, "IdentityDataAnalysis_AnVisibility", categorysIds, anVisibilityFilter);
 		}
@@ -360,9 +362,8 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 		}
 
 		// Получение обькта Parameter по BuiltInParameter
-		private List<Parameter> GetParametersByBuiltInParameters(UIDocument uiDoc, List<BuiltInParameter> builtInParameters)
+		private List<Parameter> GetParametersByBuiltInParameters(UIDocument uiDoc, List<BuiltInParameter> builtInParameters, List<Element> elements)
 		{
-			List<Element> elements = GetModelElementsByActiveView(uiDoc);
 			List<Parameter> parameters = new List<Parameter>(builtInParameters.Count);
 			foreach (BuiltInParameter builtInParameter in builtInParameters)
 			{
