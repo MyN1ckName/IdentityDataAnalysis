@@ -75,8 +75,7 @@ namespace IdentityDataAnalysis.Windows.MainWindow
 				},
 				obj =>
 				{
-					if (selected != null) { return true; }
-					else { return false; }
+					return selected != null;					
 				}));
 			}
 		}
