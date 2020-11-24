@@ -4,7 +4,8 @@
 ![GitHub](https://img.shields.io/github/license/MyN1ckName/IdentityDataAnalysis?color=blue)
 
 Autodesk Revit Plug-In. See the Video for more Information:
-[![IMAGE youtube](http://img.youtube.com/vi/YOUTUBE_VIDEO_ID_HERE/0.jpg)](https://www.youtube.com/watch?v=KYYRQGDGyEw)
+[![IdentityDataAnalysis](https://img.youtube.com/vi/KYYRQGDGyEw/0.jpg)]
+(https://www.youtube.com/watch?v=KYYRQGDGyEw "IdentityDataAnalysis")
 
 ## License
 This sample is licensed under the terms of the [MIT](https://opensource.org/licenses/MIT) License.
